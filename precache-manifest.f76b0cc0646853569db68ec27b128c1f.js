@@ -1,10 +1,10 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "dce4258ad0178d7193202777731d9901",
+    "revision": "4fec96b088f7a59be2d0a6e5e61aaece",
     "url": "/rensdk-tutorial/index.html"
   },
   {
-    "revision": "6f7db74b2213f0e63f24",
+    "revision": "28f8d4620c6d58c7b46a",
     "url": "/rensdk-tutorial/static/css/main.2cce8147.chunk.css"
   },
   {
@@ -12,8 +12,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/rensdk-tutorial/static/js/2.8fa84a0d.chunk.js"
   },
   {
-    "revision": "6f7db74b2213f0e63f24",
-    "url": "/rensdk-tutorial/static/js/main.336060c7.chunk.js"
+    "revision": "28f8d4620c6d58c7b46a",
+    "url": "/rensdk-tutorial/static/js/main.9edaa297.chunk.js"
   },
   {
     "revision": "7d2e4888cb3b14e60e0d",
