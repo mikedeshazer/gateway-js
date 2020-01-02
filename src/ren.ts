@@ -8,7 +8,7 @@ export const RenGatewayContainerHTML = () => `
 </div>
 `;
 
-export const RenElementHTML = (uniqueID: string) => `
+export const RenElementHTML = (uniqueID: string, iframeURL: string) => `
 <div class="_ren_gateway" id="_ren_gateway-${uniqueID}">
     <style>
     ._ren_overlay {
@@ -45,6 +45,22 @@ export const RenElementHTML = (uniqueID: string) => `
         box-shadow: 0 5px 10px 0 rgba(0,0,0,0.5);
     }
 
+    ._ren_gateway-minified+._ren_gateway-minified ._ren_iframeShadow {
+        margin-top: 60px;
+    }
+    ._ren_gateway-minified+._ren_gateway-minified+._ren_gateway-minified ._ren_iframeShadow {
+        margin-top: 120px;
+    }
+    ._ren_gateway-minified+._ren_gateway-minified+._ren_gateway-minified+._ren_gateway-minified ._ren_iframeShadow {
+        margin-top: 180px;
+    }
+    ._ren_gateway-minified+._ren_gateway-minified+._ren_gateway-minified+._ren_gateway-minified+._ren_gateway-minified ._ren_iframeShadow {
+        margin-top: 240px;
+    }
+    ._ren_gateway-minified+._ren_gateway-minified+._ren_gateway-minified+._ren_gateway-minified+._ren_gateway-minified+._ren_gateway-minified ._ren_iframeShadow {
+        margin-top: 300px;
+    }
+
     ._ren_gateway-minified ._ren_overlay {
         display: none;
     }
@@ -59,7 +75,7 @@ export const RenElementHTML = (uniqueID: string) => `
     <div class="_ren_overlay"></div>
     <div class="_ren_iframeShadow" id="_ren_iframeShadow-${uniqueID}">
         <iframe class="_ren_iframe" id="_ren_iframe-${uniqueID}" style=""
-            src="https://gateway-js.herokuapp.com/" ></iframe>
+            src="${iframeURL}" ></iframe>
     </div>
 </div>
 `;

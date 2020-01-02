@@ -10,8 +10,6 @@ export interface Commitment {
     contractParams: Array<{ name: string, value: string, type: string }>;
 }
 
-// const sleep = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
-
 const getElement = (id: string) => {
     const element = document.getElementById(id);
     if (!element) {
@@ -23,23 +21,22 @@ const getElement = (id: string) => {
 function createElementFromHTML(htmlString: string) {
     var div = document.createElement('div');
     div.innerHTML = htmlString.trim();
-
-    // Change this to div.childNodes to support multiple top-level nodes
     return div.firstChild;
 }
 
-// box-shadow: 0 0 32px 10px rgba(100, 100, 100, 0.9); 
+const GATEWAY_URL = "http://localhost:3344/";
+
 class GatewayJS {
+    // Each GatewayJS instance has a unique ID
     private id: string;
     public paused = false;
 
     constructor() {
-        this.id = "1234";
+        this.id = String(Math.random()).slice(2); // TODO: Generate UUID properly
     }
 
     public getPopup = () => getElement(`_ren_gateway-${this.id}`);
     public getIFrame = () => getElement(`_ren_iframe-${this.id}`)
-    // public getIFrameShadow = () => getElement(`_ren_iframeShadow-${this.id}`);
     public getOrCreateGatewayContainer = () => {
         try {
             return getElement(`_ren_gatewayContainer`);
@@ -62,8 +59,8 @@ class GatewayJS {
         return `__renAskForAddress__${token ? token.toUpperCase() : ""}`;
     }
 
-    private sendMessage = (type: string, payload: any) => {
-        const frame = this.getIFrame();
+    private sendMessage = (type: string, payload: any, iframeIn?: ChildNode) => {
+        const frame = iframeIn || this.getIFrame();
         if (frame) {
             (frame as any).contentWindow.postMessage({ from: "ren", type, payload }, '*');
         }
@@ -101,6 +98,49 @@ class GatewayJS {
         this._resume();
     }
 
+    public unfinishedTrades = async () => new Promise((resolve, reject) => {
+        const container = this.getOrCreateGatewayContainer();
+
+        const iframe = (uniqueID: string, iframeURL: string) => `
+        <iframe class="_ren_iframe-hidden" id="_ren_iframe-hidden-${uniqueID}" style="display: none"
+            src="${iframeURL}/unfinished" ></iframe>
+        `
+
+        const popup = createElementFromHTML(iframe(this.id, GATEWAY_URL));
+
+        if (popup) {
+            container.insertBefore(popup, container.lastChild);
+        }
+
+        const close = () => {
+            if (popup) {
+                container.removeChild(popup);
+            }
+        }
+
+        window.onmessage = (e: any) => {
+            if (e.data && e.data.from === "ren") {
+                // alert(`I got a message: ${JSON.stringify(e.data)}`);
+                switch (e.data.type) {
+                    case "ready":
+                        if (popup) {
+                            this.sendMessage("getTrades", {}, popup);
+                        }
+                        break;
+                    case "trades":
+                        if (e.data.error) {
+                            close();
+                            reject(new Error(e.data.error));
+                        } else {
+                            close();
+                            resolve(e.data.payload);
+                        }
+                        break;
+                }
+            }
+        };
+    })
+
     public open = async (params: Commitment) => new Promise((resolve, reject) => {
 
         // Check that GatewayJS isn't already open
@@ -108,11 +148,9 @@ class GatewayJS {
         try { existingPopup = this.getPopup(); } catch (error) { /* Ignore error */ }
         if (existingPopup) { throw new Error("GatewayJS already open"); }
 
-        // Check if there's already a "_ren" element
-
         const container = this.getOrCreateGatewayContainer();
 
-        const popup = createElementFromHTML(RenElementHTML(this.id));
+        const popup = createElementFromHTML(RenElementHTML(this.id, GATEWAY_URL));
 
         if (popup) {
             container.insertBefore(popup, container.lastChild);
@@ -120,7 +158,6 @@ class GatewayJS {
 
         window.onmessage = (e: any) => {
             if (e.data && e.data.from === "ren") {
-                console.log(`New message! ${e.data.type}`);
                 // alert(`I got a message: ${JSON.stringify(e.data)}`);
                 switch (e.data.type) {
                     case "ready":
@@ -132,7 +169,6 @@ class GatewayJS {
                             contractParams: params.contractParams,
                         });
                         if (this.paused) {
-                            console.log(`Asking them to pause!!!`);
                             this.pause();
                         }
                         break;
