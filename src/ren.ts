@@ -24,10 +24,11 @@ export const RenElementHTML = (uniqueID: string, frameUrl: string) => `
     ._ren_iframeShadow {
         box-shadow: 0 20px 40px 0 rgba(0,0,0,0.5);
         border-radius: 6px;
+        background: white;
         position:absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        top: calc(50% - calc(460px / 2));
+        left: calc(50% - calc(470px / 2));
+        // transform: translate(-50%, -50%);
         width:460px;
         height:470px;
         z-index:1000000;
@@ -36,9 +37,9 @@ export const RenElementHTML = (uniqueID: string, frameUrl: string) => `
 
     ._ren_gateway-minified ._ren_iframeShadow {
         top: 10px;
-        right: 10px;
-        left: unset;
-        transform: translate(0%, 0%);
+        // right: 10px;
+        left: calc(100% - 250px - 10px);
+        // transform: translate(0%, 0%);
         width:250px;
         height:50px;
         box-shadow: 0 5px 10px 0 rgba(0,0,0,0.5);
@@ -73,14 +74,10 @@ export const RenElementHTML = (uniqueID: string, frameUrl: string) => `
     </style>
     <div class="_ren_overlay"></div>
     <div class="_ren_iframeShadow" id="_ren_iframeShadow-${uniqueID}">
-        <iframe class="_ren_iframe" id="_ren_iframe-${uniqueID}" style="background-color: transparent"
-        allowtransparency="true" frameborder="0" src="${frameUrl}" ></iframe>
+        <iframe class="_ren_iframe" id="_ren_iframe-${uniqueID}" ${/*style="background-color: transparent" allowtransparency="true"*/""} frameborder="0" src="${frameUrl}" ></iframe>
     </div>
 </div>
 `;
-
-
-
 
 // https://gateway-js.herokuapp.com/
 

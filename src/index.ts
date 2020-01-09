@@ -121,33 +121,39 @@ class GatewayJS {
             container.insertBefore(popup, container.lastChild);
         }
 
+        let listener: (e: any) => void;
+
         const close = () => {
             if (popup) {
+                window.removeEventListener("message", listener);
                 container.removeChild(popup);
             }
         }
 
-        window.onmessage = (e: any) => {
+        listener = (e: any) => {
             if (e.data && e.data.from === "ren") {
                 // alert(`I got a message: ${JSON.stringify(e.data)}`);
                 switch (e.data.type) {
                     case "ready":
                         if (popup) {
-                            this.sendMessage("getTrades", {}, popup);
+                            this.sendMessage("getTrades", { frameID: this.id }, popup);
                         }
                         break;
                     case "trades":
-                        if (e.data.error) {
-                            close();
-                            reject(new Error(e.data.error));
-                        } else {
-                            close();
-                            resolve(e.data.payload);
-                        }
+                        if (e.data.frameID === this.id)
+                            if (e.data.error) {
+                                close();
+                                reject(new Error(e.data.error));
+                            } else {
+                                close();
+                                resolve(e.data.payload);
+                            }
                         break;
                 }
             }
         };
+
+        window.addEventListener('message', listener);
     })
 
     public open = async (params: Commitment) => new Promise((resolve, reject) => {
