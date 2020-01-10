@@ -10,6 +10,7 @@ export interface Commitment {
     sendAmount: number;
     contractFn: string;
     contractParams: Array<{ name: string, value: string, type: string }>;
+    nonce: string;
 }
 
 const getElement = (id: string) => {
@@ -28,7 +29,7 @@ function createElementFromHTML(htmlString: string) {
 
 // const GATEWAY_URL = "http://localhost:3344/";
 
-class GatewayJS {
+export class GatewayJS {
     // Each GatewayJS instance has a unique ID
     private id: string;
     private endpoint: string;
@@ -93,18 +94,16 @@ class GatewayJS {
         this.getPopup().classList.remove("_ren_gateway-minified");
     }
 
-    public debug = (type: string, payload: any) => {
-        this.sendMessage(type, payload);
-    }
-
     public pause = () => {
         this.sendMessage("pause", {});
         this._pause();
+        return this;
     }
 
     public resume = () => {
         this.sendMessage("resume", {});
         this._resume();
+        return this;
     }
 
     public unfinishedTrades = async () => new Promise((resolve, reject) => {
@@ -183,6 +182,7 @@ class GatewayJS {
                             sendAmount: params.sendAmount,
                             contractFn: params.contractFn,
                             contractParams: params.contractParams,
+                            nonce: params.nonce,
                         });
                         if (this.paused) {
                             this.pause();
@@ -223,4 +223,37 @@ class GatewayJS {
     })
 };
 
-export default GatewayJS;
+
+
+////////////////////////////////////////////////////////////////////////////////
+// EXPORTS                                                                    //
+// Based on https://github.com/MikeMcl/bignumber.js/blob/master/bignumber.js  //
+////////////////////////////////////////////////////////////////////////////////
+
+// tslint:disable: no-object-mutation
+
+// tslint:disable-next-line: no-string-literal
+(GatewayJS as any)["default"] = (GatewayJS as any).GatewayJS = GatewayJS;
+
+declare global {
+    let define: any;
+    let module: any;
+}
+if (typeof define === 'function' && define.amd) {
+    // AMD.
+    define(() => GatewayJS);
+
+} else if (typeof module !== "undefined" && module.exports) {
+    // Node.js and other environments that support module.exports.
+    try {
+        module.exports = GatewayJS;
+    } catch (error) {
+        // ignore error
+    }
+
+} else {
+    // Browser.
+    if (typeof window !== "undefined" && window) {
+        (window as any).GatewayJS = GatewayJS;
+    }
+}

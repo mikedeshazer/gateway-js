@@ -1,5 +1,5 @@
 {
-  "name": "gateway-js",
+  "name": "@renproject/gateway-js",
   "version": "1.0.0",
   "description": "GatewayJS allows dApp to easily and securely integrate with RenVM",
   "main": "build/main/index.js",
