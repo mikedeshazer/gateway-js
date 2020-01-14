@@ -9,7 +9,7 @@ export interface Commitment {
     sendTo: string;
     sendAmount: number;
     contractFn: string;
-    contractParams: Array<{ name: string, value: string, type: string }>;
+    contractParams: Array<{ name: string, value: string | number, type: string }>;
     nonce: string;
 }
 
