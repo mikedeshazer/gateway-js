@@ -245,7 +245,7 @@ export default class GatewayJS {
 
 declare global {
     let define: any;
-    let module: any;
+    // let module: any;
 }
 if (typeof define === 'function' && define.amd) {
     // AMD.
