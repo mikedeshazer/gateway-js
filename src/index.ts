@@ -2,7 +2,9 @@ import { RenElementHTML, RenGatewayContainerHTML } from "./ren";
 
 // tslint:disable
 
-const GATEWAY_ENDPOINT = "https://gateway-js.herokuapp.com/";
+// For now, the endpoints are network specific.
+const GATEWAY_ENDPOINT = "https://gateway-staging.renproject.io/";
+const GATEWAY_ENDPOINT_CHAOSNET = "https://gateway.renproject.io/";
 
 export interface Commitment {
     sendToken: string;
@@ -29,7 +31,7 @@ function createElementFromHTML(htmlString: string) {
 
 // const GATEWAY_URL = "http://localhost:3344/";
 
-export class GatewayJS {
+export default class GatewayJS {
     // Each GatewayJS instance has a unique ID
     private id: string;
     private endpoint: string;
@@ -37,6 +39,12 @@ export class GatewayJS {
 
     // FIXME: Passing in an endpoint is great for development but probably not very secure
     constructor(endpoint?: string) {
+        if (endpoint === "testnet") {
+            endpoint = GATEWAY_ENDPOINT;
+        }
+        if (endpoint === "chaosnet") {
+            endpoint = GATEWAY_ENDPOINT_CHAOSNET;
+        }
         this.id = String(Math.random()).slice(2); // TODO: Generate UUID properly
         this.endpoint = endpoint || GATEWAY_ENDPOINT;
     }
@@ -106,7 +114,7 @@ export class GatewayJS {
         return this;
     }
 
-    public unfinishedTrades = async () => new Promise((resolve, reject) => {
+    public unfinishedTrades = async () => new Promise<any>((resolve, reject) => {
         const container = this.getOrCreateGatewayContainer();
 
         const iframe = (uniqueID: string, iframeURL: string) => `

@@ -8,6 +8,8 @@ export const RenGatewayContainerHTML = () => `
 </div>
 `;
 
+const iframeHeight = 470;
+
 export const RenElementHTML = (uniqueID: string, frameUrl: string) => `
 <div class="_ren_gateway" id="_ren_gateway-${uniqueID}">
     <style>
@@ -27,10 +29,10 @@ export const RenElementHTML = (uniqueID: string, frameUrl: string) => `
         background: white;
         position:absolute;
         top: calc(50% - calc(460px / 2));
-        left: calc(50% - calc(470px / 2));
+        left: calc(50% - calc(${iframeHeight}px / 2));
         // transform: translate(-50%, -50%);
         width:460px;
-        height:470px;
+        height:${iframeHeight}px;
         z-index:1000000;
         transition: all 300ms;
     }
