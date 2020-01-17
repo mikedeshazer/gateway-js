@@ -335,14 +335,15 @@ if (typeof define === 'function' && define.amd) {
     // AMD.
     define(() => GatewayJS);
 
+    // @ts-ignore
 } else if (typeof module !== "undefined" && module.exports) {
     // Node.js and other environments that support module.exports.
     try {
+        // @ts-ignore
         module.exports = GatewayJS;
     } catch (error) {
         // ignore error
     }
-
 } else {
     // Browser.
     if (typeof window !== "undefined" && window) {
