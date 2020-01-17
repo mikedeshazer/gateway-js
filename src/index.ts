@@ -32,6 +32,27 @@ const randomID = () => String(Math.random()).slice(2);
 // const GATEWAY_URL = "http://localhost:3344/";
 
 export default class GatewayJS {
+    private endpoint: string;
+    constructor(endpoint?: string) {
+        if (endpoint === "testnet") {
+            endpoint = GATEWAY_ENDPOINT;
+        }
+        if (endpoint === "chaosnet") {
+            endpoint = GATEWAY_ENDPOINT_CHAOSNET;
+        }
+        this.endpoint = endpoint || GATEWAY_ENDPOINT;
+    }
+
+    public unfinishedTrades = async (): Promise<Map<string, HistoryEvent>> => {
+        return new Gateway(this.endpoint).unfinishedTrades();
+    }
+
+    public open = (params: Commitment): Gateway => {
+        return new Gateway(this.endpoint).open(params);
+    }
+}
+
+export class Gateway {
     // Each GatewayJS instance has a unique ID
     private id: string;
     private endpoint: string;
@@ -39,6 +60,8 @@ export default class GatewayJS {
     public isPaused = false;
     public isOpen = false;
     private isCancelling = false;
+
+    private promiEvent: PromiEvent<any> = newPromiEvent();
 
     // FIXME: Passing in an endpoint is great for development but probably not very secure
     constructor(endpoint?: string) {
@@ -203,9 +226,7 @@ export default class GatewayJS {
         window.addEventListener('message', listener);
     })
 
-    public open = (params: Commitment): PromiEvent<any> => {
-
-        const promiEvent = newPromiEvent<any>();
+    public open = (params: Commitment): Gateway => {
 
         (async () => {
 
@@ -286,10 +307,12 @@ export default class GatewayJS {
                 };
             }
 
-        })().then(promiEvent.resolve).catch(promiEvent.reject);
+        })().then(this.promiEvent.resolve).catch(this.promiEvent.reject);
 
-        return promiEvent;
+        return this;
     }
+
+    public result = () => this.promiEvent;
 };
 
 
