@@ -1,3 +1,4 @@
+import { Chain } from "./renJsCommon";
 
 // tslint:disable: readonly-keyword
 // tslint:disable: readonly-array
@@ -30,13 +31,6 @@ export interface Commitment {
     contractFn: string;
     contractParams: Array<{ name: string, value: string | number, type: string }>;
     nonce?: string;
-}
-
-export declare enum Chain {
-    Bitcoin = "Btc",
-    Ethereum = "Eth",
-    Zcash = "Zec",
-    BitcoinCash = "Bch"
 }
 
 export interface Tx {
