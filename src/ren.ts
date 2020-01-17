@@ -8,10 +8,10 @@ export const RenGatewayContainerHTML = () => `
 </div>
 `;
 
-const iframeHeight = 470;
+const iframeHeight = 470 + 67; // Main div + progress div
 
-export const RenElementHTML = (uniqueID: string, frameUrl: string) => `
-<div class="_ren_gateway" id="_ren_gateway-${uniqueID}">
+export const RenElementHTML = (uniqueID: string, frameUrl: string, paused?: boolean) => `
+<div class="_ren_gateway ${paused ? "_ren_gateway-minified" : ""}" id="_ren_gateway-${uniqueID}">
     <style>
     ._ren_overlay {
         width: 100vw;
@@ -28,8 +28,8 @@ export const RenElementHTML = (uniqueID: string, frameUrl: string) => `
         border-radius: 6px;
         background: white;
         position:absolute;
-        top: calc(50% - calc(460px / 2));
-        left: calc(50% - calc(${iframeHeight}px / 2));
+        left: calc(50vw - calc(460px / 2));
+        top: calc(50vh - calc(${iframeHeight}px / 2));
         // transform: translate(-50%, -50%);
         width:460px;
         height:${iframeHeight}px;
@@ -45,8 +45,10 @@ export const RenElementHTML = (uniqueID: string, frameUrl: string) => `
         width:250px;
         height:50px;
         box-shadow: 0 5px 10px 0 rgba(0,0,0,0.5);
+        z-index: 999999;
     }
 
+    /* TODO: Use single CSS rule */
     ._ren_gateway+._ren_gateway-minified ._ren_iframeShadow {
         top: calc(10px + calc(60px * 1));
     }
@@ -61,6 +63,15 @@ export const RenElementHTML = (uniqueID: string, frameUrl: string) => `
     }
     ._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway-minified ._ren_iframeShadow {
         top: calc(10px + calc(60px * 5));
+    }
+    ._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway-minified ._ren_iframeShadow {
+        top: calc(10px + calc(60px * 6));
+    }
+    ._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway-minified ._ren_iframeShadow {
+        top: calc(10px + calc(60px * 7));
+    }
+    ._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway+._ren_gateway-minified ._ren_iframeShadow {
+        top: calc(10px + calc(60px * 8));
     }
 
     ._ren_gateway-minified ._ren_overlay {

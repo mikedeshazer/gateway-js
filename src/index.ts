@@ -1,4 +1,8 @@
+import { newPromiEvent, PromiEvent } from "./promiEvent";
 import { RenElementHTML, RenGatewayContainerHTML } from "./ren";
+import { Commitment, GatewayMessage, GatewayMessageType, HistoryEvent } from "./types";
+
+export { HistoryEvent } from "./types";
 
 // tslint:disable
 
@@ -6,14 +10,7 @@ import { RenElementHTML, RenGatewayContainerHTML } from "./ren";
 const GATEWAY_ENDPOINT = "https://gateway-staging.renproject.io/";
 const GATEWAY_ENDPOINT_CHAOSNET = "https://gateway.renproject.io/";
 
-export interface Commitment {
-    sendToken: string;
-    sendTo: string;
-    sendAmount: number;
-    contractFn: string;
-    contractParams: Array<{ name: string, value: string | number, type: string }>;
-    nonce: string;
-}
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const getElement = (id: string) => {
     const element = document.getElementById(id);
@@ -29,13 +26,19 @@ function createElementFromHTML(htmlString: string) {
     return div.firstChild;
 }
 
+// TODO: Generate uuid properly
+const randomID = () => String(Math.random()).slice(2);
+
 // const GATEWAY_URL = "http://localhost:3344/";
 
 export default class GatewayJS {
     // Each GatewayJS instance has a unique ID
     private id: string;
     private endpoint: string;
-    public paused = false;
+
+    public isPaused = false;
+    public isOpen = false;
+    private isCancelling = false;
 
     // FIXME: Passing in an endpoint is great for development but probably not very secure
     constructor(endpoint?: string) {
@@ -45,7 +48,7 @@ export default class GatewayJS {
         if (endpoint === "chaosnet") {
             endpoint = GATEWAY_ENDPOINT_CHAOSNET;
         }
-        this.id = String(Math.random()).slice(2); // TODO: Generate UUID properly
+        this.id = randomID();
         this.endpoint = endpoint || GATEWAY_ENDPOINT;
     }
 
@@ -73,12 +76,42 @@ export default class GatewayJS {
         return `__renAskForAddress__${token ? token.toUpperCase() : ""}`;
     }
 
-    private sendMessage = (type: string, payload: any, iframeIn?: ChildNode) => {
-        const frame = iframeIn || this.getIFrame();
-        if (frame) {
-            (frame as any).contentWindow.postMessage({ from: "ren", frameID: this.id, type, payload }, '*');
+    private sendMessage = <T>(type: GatewayMessageType, payload: T, iframeIn?: ChildNode) => new Promise<void>(async (resolve) => {
+        let frame = iframeIn || this.getIFrame();
+
+        while (!frame) {
+            await sleep(1 * 1000);
         }
-    }
+
+        const messageID = randomID();
+
+        let listener: (e: { data: GatewayMessage<any> }) => void;
+
+        let acknowledged = false;
+        const removeListener = () => {
+            acknowledged = true;
+            window.removeEventListener("message", listener);
+        }
+
+        listener = (e: { data: GatewayMessage<any> }) => {
+            if (acknowledged) {
+                console.log(`removing didn't work!`);
+            }
+            if (e.data && e.data.from === "ren" && e.data.messageID === messageID) {
+                removeListener();
+                resolve();
+            }
+        }
+
+        window.addEventListener('message', listener);
+
+        // Repeat message until acknowledged
+        while (!acknowledged && (frame as any).contentWindow) {
+            const gatewayMessage: GatewayMessage<T> = { from: "ren", frameID: this.id, type, payload, messageID };
+            (frame as any).contentWindow.postMessage(gatewayMessage, '*');
+            await sleep(1 * 1000);
+        }
+    });
 
 
     public close = () => {
@@ -87,39 +120,46 @@ export default class GatewayJS {
             if (renElement.parentElement) {
                 renElement.parentElement.removeChild(renElement);
             }
+            this.isOpen = false;
         } catch (error) {
             console.error(error);
         }
     }
 
     private _pause = () => {
-        this.paused = true;
+        this.isPaused = true;
         this.getPopup().classList.add("_ren_gateway-minified");
     }
 
     private _resume = () => {
-        this.paused = false;
+        this.isPaused = false;
         this.getPopup().classList.remove("_ren_gateway-minified");
     }
 
-    public pause = () => {
-        this.sendMessage("pause", {});
+    public pause = async () => {
         this._pause();
+        await this.sendMessage(GatewayMessageType.Pause, {});
         return this;
     }
 
-    public resume = () => {
-        this.sendMessage("resume", {});
+    public resume = async () => {
         this._resume();
+        await this.sendMessage(GatewayMessageType.Resume, {});
         return this;
     }
 
-    public unfinishedTrades = async () => new Promise<any>((resolve, reject) => {
+    public cancel = async () => {
+        this.isCancelling = true;
+        await this.sendMessage(GatewayMessageType.Cancel, {});
+        return this;
+    }
+
+    public unfinishedTrades = async () => new Promise<Map<string, HistoryEvent>>((resolve, reject) => {
         const container = this.getOrCreateGatewayContainer();
 
         const iframe = (uniqueID: string, iframeURL: string) => `
         <iframe class="_ren_iframe-hidden" id="_ren_iframe-hidden-${uniqueID}" style="display: none"
-            src="${iframeURL}/unfinished" ></iframe>
+            src="${`${iframeURL}#/unfinished?id=${uniqueID}`}" ></iframe>
         `
 
         const popup = createElementFromHTML(iframe(this.id, this.endpoint));
@@ -128,7 +168,7 @@ export default class GatewayJS {
             container.insertBefore(popup, container.lastChild);
         }
 
-        let listener: (e: any) => void;
+        let listener: (e: { data: GatewayMessage<any> }) => void;
 
         const close = () => {
             if (popup) {
@@ -137,16 +177,16 @@ export default class GatewayJS {
             }
         }
 
-        listener = (e: any) => {
+        listener = (e: { data: GatewayMessage<any> }) => {
             if (e.data && e.data.from === "ren") {
                 // alert(`I got a message: ${JSON.stringify(e.data)}`);
                 switch (e.data.type) {
                     case "ready":
                         if (popup) {
-                            this.sendMessage("getTrades", { frameID: this.id }, popup);
+                            this.sendMessage(GatewayMessageType.GetTrades, { frameID: this.id }, popup);
                         }
                         break;
-                    case "trades":
+                    case "getTrades":
                         if (e.data.frameID === this.id)
                             if (e.data.error) {
                                 close();
@@ -163,72 +203,93 @@ export default class GatewayJS {
         window.addEventListener('message', listener);
     })
 
-    public open = async (params: Commitment) => new Promise((resolve, reject) => {
+    public open = (params: Commitment): PromiEvent<any> => {
 
-        // Check that GatewayJS isn't already open
-        let existingPopup;
-        try { existingPopup = this.getPopup(); } catch (error) { /* Ignore error */ }
-        if (existingPopup) { throw new Error("GatewayJS already open"); }
+        const promiEvent = newPromiEvent<any>();
 
-        const container = this.getOrCreateGatewayContainer();
+        (async () => {
 
-        const popup = createElementFromHTML(RenElementHTML(this.id, this.endpoint));
+            // Check that GatewayJS isn't already open
+            let existingPopup;
+            try { existingPopup = this.getPopup(); } catch (error) { /* Ignore error */ }
+            if (existingPopup) { throw new Error("GatewayJS already open"); }
 
-        if (popup) {
-            container.insertBefore(popup, container.lastChild);
-        }
+            const container = this.getOrCreateGatewayContainer();
 
-        window.addEventListener('message', (e: any) => {
-            if (e.data && e.data.from === "ren") {
-                // alert(`I got a message: ${JSON.stringify(e.data)}`);
-                switch (e.data.type) {
-                    case "ready":
-                        this.sendMessage("shift", {
-                            frameID: this.id,
-                            sendToken: params.sendToken,
-                            sendTo: params.sendTo,
-                            sendAmount: params.sendAmount,
-                            contractFn: params.contractFn,
-                            contractParams: params.contractParams,
-                            nonce: params.nonce,
-                        });
-                        if (this.paused) {
-                            this.pause();
-                        }
-                        break;
-                    case "pause":
-                        if (e.data.frameID === this.id) {
-                            this._pause();
-                        }
-                        break;
-                    case "resume":
-                        if (e.data.frameID === this.id) {
-                            this._resume();
-                        }
-                        break;
-                    case "cancel":
-                        if (e.data.frameID === this.id) {
-                            this.close();
-                            reject(e.data.payload);
-                        }
-                        break;
-                    case "done":
-                        if (e.data.frameID === this.id) {
-                            this.close();
-                            resolve(e.data.payload);
-                        }
-                        break;
-                }
+            const popup = createElementFromHTML(RenElementHTML(this.id, `${this.endpoint}#/?id=${this.id}`, this.isPaused));
+
+            if (popup) {
+                container.insertBefore(popup, container.lastChild);
+                this.isOpen = true;
             }
-        });
 
-        const overlay = document.querySelector('._ren_overlay');
-        if (overlay) {
-            (overlay as any).onclick = () => {
-                this.pause();
+            let listener: (e: { data: GatewayMessage<any> }) => void;
+
+            const close = () => {
+                // Remove listener
+                window.removeEventListener("message", listener);
+                this.close();
+            }
+
+            listener = (e: { data: GatewayMessage<any> }) => {
+                if (e.data && e.data.from === "ren" && e.data.frameID === this.id) {
+                    // alert(`I got a message: ${JSON.stringify(e.data)}`);
+                    switch (e.data.type) {
+                        case "ready":
+                            this.sendMessage(GatewayMessageType.Shift, {
+                                shift: {
+                                    frameID: this.id,
+                                    sendToken: params.sendToken,
+                                    sendTo: params.sendTo,
+                                    sendAmount: params.sendAmount,
+                                    contractFn: params.contractFn,
+                                    contractParams: params.contractParams,
+                                    nonce: params.nonce,
+                                },
+                                paused: this.isPaused,
+                            });
+                            if (this.isPaused) {
+                                this.pause();
+                            }
+                            break;
+                        case GatewayMessageType.Status:
+                            this._pause();
+                            break;
+                        case GatewayMessageType.Pause:
+                            this._pause();
+                            break;
+                        case GatewayMessageType.Resume:
+                            this._resume();
+                            break;
+                        case GatewayMessageType.Cancel:
+                            close();
+                            if (this.isCancelling) {
+                                this.isCancelling = false;
+                                return;
+                            } else {
+                                this.isCancelling = false;
+                                throw new Error("Shift cancelled by user");
+                            }
+                        case GatewayMessageType.Done:
+                            close();
+                            return e.data.payload;
+                    }
+                }
             };
-        }
-    })
+
+            window.addEventListener('message', listener);
+
+            const overlay = document.querySelector('._ren_overlay');
+            if (overlay) {
+                (overlay as any).onclick = () => {
+                    this.pause();
+                };
+            }
+
+        })().then(promiEvent.resolve).catch(promiEvent.reject);
+
+        return promiEvent;
+    }
 };
 
 

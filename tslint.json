@@ -31,10 +31,10 @@
     "no-delete": true,
     "no-method-signature": true,
     // Functional style rules
-    "no-this": true,
-    "no-class": true,
+    "no-this": false,
+    "no-class": false,
     "no-mixed-interface": true,
-    "no-if-statement": true,
+    "no-if-statement": false,
     /* end tslint-immutable rules */
     // Disabled
     "no-expression-statement": false,
