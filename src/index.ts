@@ -1,9 +1,11 @@
 import { newPromiEvent, PromiEvent } from "./promiEvent";
 import { RenElementHTML, RenGatewayContainerHTML } from "./ren";
 import { Chain, Network, Tokens } from "./renJsCommon";
-import { Commitment, GatewayMessage, GatewayMessageType, HistoryEvent, TxStatus } from "./types";
+import {
+    Commitment, GatewayMessage, GatewayMessageType, HistoryEvent, ShiftInStatus, ShiftOutStatus,
+} from "./types";
 
-export { HistoryEvent } from "./types";
+export { HistoryEvent, ShiftInStatus, ShiftOutEvent } from "./types";
 export { Chain, Network, Tokens } from "./renJsCommon";
 
 const randomNonce = () => {
@@ -66,7 +68,8 @@ export class Gateway {
     public static readonly Tokens = Tokens;
     public static readonly Networks = Network;
     public static readonly Chains = Chain;
-    public static readonly TxStatus = TxStatus;
+    public static readonly ShiftInStatus = ShiftInStatus;
+    public static readonly ShiftOutStatus = ShiftOutStatus;
     public static readonly utils = utils;
     public static readonly askForAddress = (token?: string) => {
         return `__renAskForAddress__${token ? token.toUpperCase() : ""}`;
@@ -352,7 +355,8 @@ export default class GatewayJS {
     public static readonly Tokens = Tokens;
     public static readonly Networks = Network;
     public static readonly Chains = Chain;
-    public static readonly TxStatus = TxStatus;
+    public static readonly ShiftInStatus = ShiftInStatus;
+    public static readonly ShiftOutStatus = ShiftOutStatus;
     public static readonly utils = utils;
     public static readonly askForAddress = (token?: string) => {
         return `__renAskForAddress__${token ? token.toUpperCase() : ""}`;
