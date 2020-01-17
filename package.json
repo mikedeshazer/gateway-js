@@ -1,9 +1,9 @@
 {
   "name": "@renproject/gateway-js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "GatewayJS allows dApp to easily and securely integrate with RenVM",
   "publishConfig": {
-        "access": "public"
+    "access": "public"
   },
   "main": "build/main/index.js",
   "typings": "build/main/index.d.ts",
