@@ -1,4 +1,4 @@
-import { Network } from "./renJsCommon";
+import { Network } from "@renproject/ren-js-common";
 
 // For now, the endpoints are network specific.
 export const GATEWAY_ENDPOINT = "https://gateway-staging.renproject.io/";

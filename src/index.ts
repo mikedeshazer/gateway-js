@@ -1,15 +1,14 @@
-import { newPromiEvent, PromiEvent } from "./promiEvent";
-import { RenElementHTML, RenGatewayContainerHTML } from "./ren";
-import { Chain, Network, Tokens } from "./renJsCommon";
 import {
-    Commitment, GatewayMessage, GatewayMessageType, HistoryEvent, ShiftInStatus, ShiftOutStatus,
-} from "./types";
+    Chain, GatewayMessage, GatewayMessageType, HistoryEvent, Network, newPromiEvent, PromiEvent,
+    SendTokenInterface, ShiftInStatus, ShiftOutStatus, ShiftParams, Tokens,
+} from "@renproject/ren-js-common";
+
+import { RenElementHTML, RenGatewayContainerHTML } from "./ren";
 import {
     createElementFromHTML, GATEWAY_ENDPOINT, getElement, randomBytes, resolveEndpoint, sleep, utils,
 } from "./utils";
 
-export { HistoryEvent, ShiftInStatus, ShiftOutEvent } from "./types";
-export { Chain, Network, Tokens } from "./renJsCommon";
+export { Chain, Network, Tokens, HistoryEvent, ShiftInStatus, ShiftOutEvent } from "@renproject/ren-js-common";
 
 export class Gateway {
 
@@ -151,7 +150,7 @@ export class Gateway {
         window.addEventListener("message", listener);
     })
 
-    public readonly open = (params: Commitment): Gateway => {
+    public readonly open = (shiftParams: (ShiftParams & SendTokenInterface) | HistoryEvent): Gateway => {
 
         (async () => {
 
@@ -186,15 +185,7 @@ export class Gateway {
                     switch (e.data.type) {
                         case "ready":
                             this._sendMessage(GatewayMessageType.Shift, {
-                                shift: {
-                                    frameID: this.id,
-                                    sendToken: params.sendToken,
-                                    sendTo: params.sendTo,
-                                    sendAmount: params.sendAmount,
-                                    contractFn: params.contractFn,
-                                    contractParams: params.contractParams,
-                                    nonce: params.nonce,
-                                },
+                                shift: shiftParams,
                                 paused: this.isPaused,
                             }).catch(console.error);
                             break;
@@ -326,7 +317,7 @@ export default class GatewayJS {
     /**
      * Creates a new Gateway instance.
      */
-    public readonly open = (params: Commitment): Gateway => {
+    public readonly open = (params: (ShiftParams & SendTokenInterface) | HistoryEvent): Gateway => {
         return new Gateway(this.endpoint).open(params);
     }
 }
