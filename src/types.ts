@@ -10,6 +10,7 @@ export enum GatewayMessageType {
     Shift = "shift",
     GetTrades = "getTrades",
     Status = "status",
+    GetStatus = "getStatus",
     Cancel = "cancel",
     Done = "done",
     Acknowledgement = "acknowledgement",

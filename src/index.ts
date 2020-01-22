@@ -4,64 +4,12 @@ import { Chain, Network, Tokens } from "./renJsCommon";
 import {
     Commitment, GatewayMessage, GatewayMessageType, HistoryEvent, ShiftInStatus, ShiftOutStatus,
 } from "./types";
+import {
+    createElementFromHTML, GATEWAY_ENDPOINT, getElement, randomBytes, resolveEndpoint, sleep, utils,
+} from "./utils";
 
 export { HistoryEvent, ShiftInStatus, ShiftOutEvent } from "./types";
 export { Chain, Network, Tokens } from "./renJsCommon";
-
-const randomNonce = () => {
-    const uints = new Uint32Array(32 / 4); // 4 bytes (32 bits)
-    window.crypto.getRandomValues(uints);
-    let str = "";
-    for (const uint of uints) {
-        str += "0".repeat(8 - uint.toString(16).length) + uint.toString(16);
-    }
-    return "0x" + str;
-};
-
-const utils = {
-    randomNonce,
-};
-
-// For now, the endpoints are network specific.
-const GATEWAY_ENDPOINT = "https://gateway-staging.renproject.io/";
-const GATEWAY_ENDPOINT_CHAOSNET = "https://gateway.renproject.io/";
-
-const sleep = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-const getElement = (id: string) => {
-    const element = document.getElementById(id);
-    if (!element) {
-        throw new Error(`Unable to find element ${id}`);
-    }
-    return element;
-};
-
-const createElementFromHTML = (htmlString: string) => {
-    const div = document.createElement("div");
-    // tslint:disable-next-line: no-object-mutation
-    div.innerHTML = htmlString.trim();
-    return div.firstChild;
-};
-
-// TODO: Generate uuid properly
-const randomID = () => String(Math.random()).slice(2);
-
-// const GATEWAY_URL = "http://localhost:3344/";
-
-const resolveEndpoint = (endpoint: Network | string) => {
-    switch (endpoint) {
-        case Network.Testnet:
-            return GATEWAY_ENDPOINT;
-        case Network.Chaosnet:
-            return GATEWAY_ENDPOINT_CHAOSNET;
-        case Network.Mainnet:
-        case Network.Devnet:
-        case Network.Localnet:
-            throw new Error(`GatewayJS does not support the network ${endpoint} yet.`);
-        default:
-            return endpoint;
-    }
-};
 
 export class Gateway {
 
@@ -71,29 +19,30 @@ export class Gateway {
     public static readonly ShiftInStatus = ShiftInStatus;
     public static readonly ShiftOutStatus = ShiftOutStatus;
     public static readonly utils = utils;
-    public static readonly askForAddress = (token?: string) => {
-        return `__renAskForAddress__${token ? token.toUpperCase() : ""}`;
-    }
 
-    // tslint:disable-next-line: readonly-keyword
+    // tslint:disable: readonly-keyword
     public isPaused = false;
-    // tslint:disable-next-line: readonly-keyword
     public isOpen = false;
+    private isCancelling = false;
+    // tslint:enable: readonly-keyword
+
+    // tslint:disable-next-line: no-any
+    private readonly promiEvent: PromiEvent<any> = newPromiEvent();
 
     // Each GatewayJS instance has a unique ID
     private readonly id: string;
     private readonly endpoint: string;
 
-    // tslint:disable-next-line: readonly-keyword
-    private isCancelling = false;
-
-    // tslint:disable-next-line: no-any
-    private readonly promiEvent: PromiEvent<any> = newPromiEvent();
-
     // FIXME: Passing in an endpoint is great for development but probably not very secure
     constructor(endpoint?: Network | string) {
         this.endpoint = resolveEndpoint(endpoint || GATEWAY_ENDPOINT);
-        this.id = randomID();
+        this.id = randomBytes(8);
+
+        // setInterval(() => {
+        //     if (this.isOpen) {
+        //         this.isPaused ? this.pause() : this.resume();
+        //     }
+        // }, 5 * 1000);
     }
 
     public readonly getPopup = () => getElement(`_ren_gateway-${this.id}`);
@@ -131,21 +80,25 @@ export class Gateway {
 
     public readonly pause = async () => {
         this._pause();
-        await this.sendMessage(GatewayMessageType.Pause, {});
+        await this._sendMessage(GatewayMessageType.Pause, {});
         return this;
     }
 
     public readonly resume = async () => {
         this._resume();
-        await this.sendMessage(GatewayMessageType.Resume, {});
+        await this._sendMessage(GatewayMessageType.Resume, {});
         return this;
     }
 
     public readonly cancel = async () => {
         // tslint:disable-next-line: no-object-mutation
         this.isCancelling = true;
-        await this.sendMessage(GatewayMessageType.Cancel, {});
+        await this._sendMessage(GatewayMessageType.Cancel, {});
         return this;
+    }
+
+    public readonly getStatus = async () => {
+        return this._sendMessage(GatewayMessageType.GetStatus, {});
     }
 
     public readonly getGateways = async () => new Promise<Map<string, HistoryEvent>>((resolve, reject) => {
@@ -153,7 +106,7 @@ export class Gateway {
 
         const iframe = (uniqueID: string, iframeURL: string) => `
         <iframe class="_ren_iframe-hidden" id="_ren_iframe-hidden-${uniqueID}" style="display: none"
-            src="${`${iframeURL}#/unfinished?id=${uniqueID}`}" ></iframe>
+            src="${`${iframeURL}#/get-trades?id=${uniqueID}`}" ></iframe>
         `;
 
         const popup = createElementFromHTML(iframe(this.id, this.endpoint));
@@ -179,7 +132,7 @@ export class Gateway {
                 switch (e.data.type) {
                     case "ready":
                         if (popup) {
-                            this.sendMessage(GatewayMessageType.GetTrades, { frameID: this.id }, popup).catch(console.error);
+                            this._sendMessage(GatewayMessageType.GetTrades, { frameID: this.id }, popup).catch(console.error);
                         }
                         break;
                     case "getTrades":
@@ -232,7 +185,7 @@ export class Gateway {
                     // alert(`I got a message: ${JSON.stringify(e.data)}`);
                     switch (e.data.type) {
                         case "ready":
-                            this.sendMessage(GatewayMessageType.Shift, {
+                            this._sendMessage(GatewayMessageType.Shift, {
                                 shift: {
                                     frameID: this.id,
                                     sendToken: params.sendToken,
@@ -244,12 +197,9 @@ export class Gateway {
                                 },
                                 paused: this.isPaused,
                             }).catch(console.error);
-                            if (this.isPaused) {
-                                this.pause().catch(console.error);
-                            }
                             break;
                         case GatewayMessageType.Status:
-                            this._pause();
+                            this.promiEvent.emit("status", e.data.payload.status, e.data.payload.details);
                             break;
                         case GatewayMessageType.Pause:
                             this._pause();
@@ -266,11 +216,13 @@ export class Gateway {
                             } else {
                                 // tslint:disable-next-line: no-object-mutation
                                 this.isCancelling = false;
-                                throw new Error("Shift cancelled by user");
+                                this.promiEvent.reject(new Error("Shift cancelled by user"));
+                                return;
                             }
                         case GatewayMessageType.Done:
                             close();
-                            return e.data.payload;
+                            this.promiEvent.resolve(e.data.payload);
+                            return;
                     }
                 }
             };
@@ -286,7 +238,7 @@ export class Gateway {
                 };
             }
 
-        })().then(this.promiEvent.resolve).catch(this.promiEvent.reject);
+        })().catch(this.promiEvent.reject);
 
         return this;
     }
@@ -294,7 +246,7 @@ export class Gateway {
     public readonly result = () => this.promiEvent;
 
 
-    private readonly sendMessage = async <T>(type: GatewayMessageType, payload: T, iframeIn?: ChildNode) => new Promise<void>(async (resolve) => {
+    private readonly _sendMessage = async <T>(type: GatewayMessageType, payload: T, iframeIn?: ChildNode) => new Promise<void>(async (resolve) => {
 
         // TODO: Allow response in acknowledgement.
 
@@ -304,7 +256,7 @@ export class Gateway {
             await sleep(1 * 1000);
         }
 
-        const messageID = randomID();
+        const messageID = randomBytes(8);
 
         // tslint:disable-next-line: no-any
         let listener: (e: { readonly data: GatewayMessage<any> }) => void;
@@ -317,9 +269,9 @@ export class Gateway {
 
         // tslint:disable-next-line: no-any
         listener = (e: { readonly data: GatewayMessage<any> }) => {
-            if (e.data && e.data.from === "ren" && e.data.messageID === messageID) {
+            if (e.data && e.data.from === "ren" && e.data.type === GatewayMessageType.Acknowledgement && e.data.messageID === messageID) {
                 removeListener();
-                resolve();
+                resolve(e.data.payload);
             }
         };
 
@@ -330,8 +282,8 @@ export class Gateway {
         const contentWindow = (frame as any).contentWindow;
         while (!acknowledged && contentWindow) {
             const gatewayMessage: GatewayMessage<T> = { from: "ren", frameID: this.id, type, payload, messageID };
-            // tslint:disable-next-line: no-any
             contentWindow.postMessage(gatewayMessage, "*");
+            // Sleep for 1 second
             await sleep(1 * 1000);
         }
     })
@@ -358,9 +310,6 @@ export default class GatewayJS {
     public static readonly ShiftInStatus = ShiftInStatus;
     public static readonly ShiftOutStatus = ShiftOutStatus;
     public static readonly utils = utils;
-    public static readonly askForAddress = (token?: string) => {
-        return `__renAskForAddress__${token ? token.toUpperCase() : ""}`;
-    }
 
     private readonly endpoint: string;
     constructor(endpoint?: Network | string) {
