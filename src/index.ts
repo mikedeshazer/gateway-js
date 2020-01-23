@@ -150,7 +150,7 @@ export class Gateway {
         window.addEventListener("message", listener);
     })
 
-    public readonly open = (shiftParams: (ShiftParams & SendTokenInterface) | HistoryEvent): Gateway => {
+    public readonly open = (shiftParams: (Exclude<ShiftParams, "web3Provider"> & SendTokenInterface) | HistoryEvent): Gateway => {
 
         (async () => {
 
