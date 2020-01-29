@@ -8,7 +8,7 @@ import {
     createElementFromHTML, GATEWAY_ENDPOINT, getElement, randomBytes, resolveEndpoint, sleep, utils,
 } from "./utils";
 
-export { Chain, Network, Tokens, HistoryEvent, ShiftInStatus, ShiftOutEvent } from "@renproject/ren-js-common";
+export { Chain, Network, Tokens, HistoryEvent, ShiftInStatus, ShiftOutStatus, ShiftInEvent, ShiftOutEvent } from "@renproject/ren-js-common";
 
 export class Gateway {
 
