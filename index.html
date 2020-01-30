@@ -64,10 +64,82 @@
 	<div class="row">
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
-				<a href="#gateway-js" id="gateway-js" style="color: inherit; text-decoration: none;">
-					<h1>gateway-js</h1>
+				<a href="#code🛠️-gatewayjscode" id="code🛠️-gatewayjscode" style="color: inherit; text-decoration: none;">
+					<h1><code>🛠️ GatewayJS</code></h1>
 				</a>
-				<p>GatewayJS allows dApp to easily and securely integrate with RenVM.</p>
+				<p>There&#39;s two official Javascript SDKs for interacting with <a href="https://renproject.io">RenVM</a>:</p>
+				<ol>
+					<li><strong>GatewayJS</strong> (this repository): The simplest way to get started, providing a full user experience.</li>
+					<li><strong>RenJS</strong> (<a href="https://github.com/renproject/ren-js"><code>ren-js</code> repository</a>): A lower-level SDK which can be integrated into your existing user interface.</li>
+				</ol>
+				<p>See the <a href="https://docs.renproject.io/developers/tutorial/getting-started">Getting Started Tutorial</a> to start using GatewayJS.</p>
+				<a href="#about" id="about" style="color: inherit; text-decoration: none;">
+					<h2>About</h2>
+				</a>
+				<p>GatewayJS is an SDK for bridging BTC, BCH and ZEC to your Ethereum-based dApp. GatewayJS lets your users deposit and withdraw cryptocurrencies into your smart contracts through the following widget:</p>
+				<p><img src="./screenshot.png" alt="GatewayJS screenshot"></p>
+				<p>GatewayJS is browser-only - see <a href="https://github.com/renproject/ren-js">RenJS</a> if you are using Node.js.</p>
+				<br />
+				<hr />
+				<br />
+				<a href="#installation" id="installation" style="color: inherit; text-decoration: none;">
+					<h2>Installation</h2>
+				</a>
+				<p>Install GatewayJS using Yarn or npm:</p>
+				<pre><code class="language-sh">yarn add @renproject/gateway-js
+<span class="hljs-comment"># Or</span>
+npm install --save @renproject/gateway-js</code></pre>
+				<a href="#usage" id="usage" style="color: inherit; text-decoration: none;">
+					<h2>Usage</h2>
+				</a>
+				<p>Usage is described in the <a href="https://docs.renproject.io/developers/tutorial/getting-started">getting started tutorial</a> in the Developer Docs.</p>
+				<p>Example of bridging BTC into Ethereum:</p>
+				<pre><code class="language-typescript"><span class="hljs-keyword">const</span> GatewayJS = <span class="hljs-built_in">require</span>(<span class="hljs-string">"@renproject/gateway-js"</span>);
+
+<span class="hljs-keyword">new</span> GatewayJS(<span class="hljs-string">"testnet"</span>).open({
+    <span class="hljs-comment">// Send BTC to an Ethereum address</span>
+    sendToken: GatewayJS.Tokens.BTC.Btc2Eth,
+
+    <span class="hljs-comment">// Amount of BTC we are sending</span>
+    sendAmount: GatewayJS.utils.value(<span class="hljs-number">0.01</span>, <span class="hljs-string">"BTC"</span>).sats(),
+
+    <span class="hljs-comment">// The recipient Ethereum address</span>
+    sendTo: <span class="hljs-string">"0xD5B5b26521665Cb37623DCA0E49c553b41dbF076"</span>,
+});</code></pre>
+				<br />
+				<br />
+				<hr />
+				<br />
+				<a href="#developer-notes" id="developer-notes" style="color: inherit; text-decoration: none;">
+					<h2>Developer notes</h2>
+				</a>
+				<a href="#building" id="building" style="color: inherit; text-decoration: none;">
+					<h3>Building</h3>
+				</a>
+				<pre><code class="language-sh">yarn run watch
+<span class="hljs-comment"># or</span>
+yarn run build</code></pre>
+				<a href="#running-tests" id="running-tests" style="color: inherit; text-decoration: none;">
+					<h3>Running tests</h3>
+				</a>
+				<p>You&#39;ll need to:</p>
+				<ol>
+					<li>Generate a mnemonic and send ETH (kovan for testnet) (path: <code>m/44&#39;/60&#39;/0&#39;/0/</code>)</li>
+					<li>Generate a private key and send BTC and ZEC (tBTC and TAZ for testnet)</li>
+					<li>Generate an Infura API key</li>
+				</ol>
+				<p>Create a <code>.env</code> file which contains the following exported variables:</p>
+				<pre><code class="language-sh"><span class="hljs-built_in">export</span> MNEMONIC=<span class="hljs-string">"your mnemonic here"</span>
+<span class="hljs-built_in">export</span> TESTNET_BITCOIN_KEY=<span class="hljs-string">"your bitcoin private key (encoded in WIF)"</span>
+<span class="hljs-built_in">export</span> INFURA_KEY=<span class="hljs-string">"your infura key (for it's v3 endpoint)"</span>
+<span class="hljs-built_in">export</span> NETWORK=<span class="hljs-string">"mainnet or testnet"</span></code></pre>
+				<p>Then just run the following command to execute the tests. Make sure there is sufficient Kovan ETH in the linked account before running tests.</p>
+				<pre><code class="language-sh">yarn run <span class="hljs-built_in">test</span></code></pre>
+				<a href="#update-contract-bindings" id="update-contract-bindings" style="color: inherit; text-decoration: none;">
+					<h3>Update contract bindings</h3>
+				</a>
+				<p>In order to update the bindings in <code>src/contracts/bindings</code>, you need to clone <a href="https://github.com/renproject/darknode-sol"><code>darknode-sol</code></a> and run:</p>
+				<pre><code class="language-sh">yarn run bindings:ts</code></pre>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
