@@ -1,4 +1,4 @@
-import { Network } from "@renproject/ren-js-common";
+import { Network, value } from "@renproject/ren-js-common";
 
 // For now, the endpoints are network specific.
 export const GATEWAY_ENDPOINT = "https://gateway-staging.renproject.io/";
@@ -21,8 +21,6 @@ export const createElementFromHTML = (htmlString: string) => {
     return div.firstChild;
 };
 
-// const GATEWAY_URL = "http://localhost:3344/";
-
 export const resolveEndpoint = (endpoint: Network | string) => {
     switch (endpoint) {
         case Network.Testnet:
@@ -39,7 +37,7 @@ export const resolveEndpoint = (endpoint: Network | string) => {
 };
 
 export const randomBytes = (bytes: number) => {
-    const uints = new Uint32Array(bytes / 4); // 4 bytes (32 bits)
+    const uints = new Uint32Array(bytes / 4);
     window.crypto.getRandomValues(uints);
     let str = "";
     for (const uint of uints) {
@@ -54,4 +52,4 @@ const askForAddress = (token?: string) => {
     return `__renAskForAddress__${token ? token.toUpperCase() : ""}`;
 };
 
-export const utils = { randomNonce, askForAddress };
+export const utils = { randomNonce, askForAddress, value };

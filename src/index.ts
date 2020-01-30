@@ -1,6 +1,6 @@
 import {
     Chain, GatewayMessage, GatewayMessageType, HistoryEvent, Network, newPromiEvent, PromiEvent,
-    SendTokenInterface, ShiftInStatus, ShiftOutStatus, ShiftParams, Tokens,
+    SendTokenInterface, ShiftInParamsAll, ShiftInStatus, ShiftOutStatus, ShiftParams, Tokens,
 } from "@renproject/ren-js-common";
 
 import { RenElementHTML, RenGatewayContainerHTML } from "./ren";
@@ -25,8 +25,8 @@ export class Gateway {
     private isCancelling = false;
     // tslint:enable: readonly-keyword
 
-    // tslint:disable-next-line: no-any
-    private readonly promiEvent: PromiEvent<any> = newPromiEvent();
+    // tslint:disable-next-line: readonly-keyword readonly-array no-any
+    private readonly promiEvent: PromiEvent<any, { status: [ShiftInStatus | ShiftOutStatus, any] }> = newPromiEvent();
 
     // Each GatewayJS instance has a unique ID
     private readonly id: string;
@@ -151,6 +151,16 @@ export class Gateway {
     })
 
     public readonly open = (shiftParams: (Exclude<ShiftParams, "web3Provider"> & SendTokenInterface) | HistoryEvent): Gateway => {
+
+        // Certain types can't be sent via sendMessage.
+        if (typeof (shiftParams as ShiftInParamsAll).sendAmount === "object") {
+            // tslint:disable-next-line: no-any no-object-mutation no-unnecessary-type-assertion
+            (shiftParams as any).sendAmount = (((shiftParams as ShiftInParamsAll).sendAmount as any).toFixed) ?
+                // tslint:disable-next-line: no-any no-unnecessary-type-assertion
+                (shiftParams as any).sendAmount.toFixed() :
+                // tslint:disable-next-line: no-any no-unnecessary-type-assertion
+                (shiftParams as any).sendAmount.toString();
+        }
 
         (async () => {
 
